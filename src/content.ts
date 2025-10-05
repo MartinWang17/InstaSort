@@ -21,9 +21,38 @@ function logTileViewPairsOnce() {
   return pairs;
 }
 
-// Expose for manual testing: window.InstaSort_logTileViewPairsOnce()
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).InstaSort_logTileViewPairsOnce = logTileViewPairsOnce;
+function parseViews(viewsText: string): number {
+    // Remove commas and spaces
+    const clean = viewsText.replace(/,/g, '').trim().toLowerCase();
+  
+    // Match the number and optional suffix (k or m)
+    const match = clean.match(/^([\d.]+)\s*([km]?)$/);
+    if (!match) return NaN;
+  
+    let num = parseFloat(match[1]);
+    const suffix = match[2];
+  
+    if (suffix === 'k') num *= 1_000;
+    if (suffix === 'm') num *= 1_000_000;
+  
+    return num;
+  }
+
+  // checkpoint testing to ensure parseViews works
+  function logTileViewPairsWithNumbers() {
+    const pairs = logTileViewPairsOnce();
+    const withNumbers = pairs.map(p => ({
+      tile: p.tile,
+      viewsText: p.viewsText,
+      viewsNumber: parseViews(p.viewsText)
+    }));
+  
+    console.log("[InstaSort] numeric pairs:", withNumbers);
+    return withNumbers;
+  }
+  
+  // Expose for manual testing:
+  (window as any).InstaSort_logTileViewPairsWithNumbers = logTileViewPairsWithNumbers;
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type === 'LOG_REEL_ROWS') {
