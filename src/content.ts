@@ -4,52 +4,30 @@ function getAllReelsByHref() {
     return reels;
   }
 
-// Collect the text value from the first span whose class starts with
-// "html-span" under a nearby container that includes a div._aajy.
-// Returns an array of { href, value } for each reel link found.
-function collectReelValuesFromAajyHtmlSpan(): Array<{ href: string; value: string | null }> {
-  // Start from the discovered reel anchors
-  const reelAnchors = Array.from(getAllReelsByHref());
-
-  const results: Array<{ href: string; value: string | null }> = [];
-
-  for (const anchor of reelAnchors) {
-    let current: HTMLElement | null = anchor as HTMLElement;
-    let aajyContainer: HTMLElement | null = null;
-
-    // Walk up the DOM until we find an ancestor that contains div._aajy
-    while (current && current !== document.body) {
-      const found = current.querySelector('div._aajy') as HTMLElement | null;
-      if (found) { aajyContainer = found; break; }
-      current = current.parentElement as HTMLElement | null;
-    }
-
-    // Within that container, look for the span whose class starts with/contains "html-span"
-    let value: string | null = null;
-    if (aajyContainer) {
-      const span = aajyContainer.querySelector(
-        'span[class^="html-span"], span[class*="html-span"]'
-      ) as HTMLSpanElement | null;
-      value = span?.textContent?.trim() ?? null;
-    }
-
-    results.push({ href: anchor.href, value });
-  }
-
-  console.log('[InstaSort] html-span values:', results);
-  return results;
+// Minimal helper: pair each reel's tile (anchor's parent) with its views text
+function logTileViewPairsOnce() {
+  const anchors = Array.from(getAllReelsByHref());
+  const pairs = anchors.map(a => {
+    const tile = (a.parentElement as HTMLElement) ?? a;
+    const span =
+      a.querySelector('div._aajy span[class*="html-span"]') ||
+      tile.querySelector('div._aajy span[class*="html-span"]');
+    const text = span?.textContent?.trim() || '';
+    // Checkpoint: clickable tile + its view text
+    console.log('tile:', tile, 'views:', text);
+    return { tile, viewsText: text };
+  });
+  console.log('[InstaSort] pairs total:', pairs.length);
+  return pairs;
 }
 
-// Expose a tiny debug hook so you can run it from DevTools:
-// In the Instagram tab console, call: window.InstaSort_logReelSpanValues()
-// This prints and returns the collected values.
+// Expose for manual testing: window.InstaSort_logTileViewPairsOnce()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).InstaSort_logReelSpanValues = collectReelValuesFromAajyHtmlSpan;
-
+(window as any).InstaSort_logTileViewPairsOnce = logTileViewPairsOnce;
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type === 'LOG_REEL_ROWS') {
-        const count = collectReelValuesFromAajyHtmlSpan();
+        const count = logTileViewPairsOnce();
         sendResponse({ ok: true, rows: count });
         // no async work here, so we don't need to return true
     }
