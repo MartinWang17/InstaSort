@@ -8,7 +8,7 @@ function getAllReelsByHref() {
 function logTileViewPairsOnce() {
   const anchors = Array.from(getAllReelsByHref());
   const pairs = anchors.map(a => {
-    const tile = (a.parentElement as HTMLElement) ?? a;
+    const tile = ((a.parentElement?.parentElement) as HTMLElement) ?? (a.parentElement as HTMLElement) ?? a;
     const span =
       a.querySelector('div._aajy span[class*="html-span"]') ||
       tile.querySelector('div._aajy span[class*="html-span"]');
@@ -94,3 +94,31 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         // no async work here, so we don't need to return true
     }
 });
+
+// Grid checkpoint helpers (prepare for distributing tiles into rows)
+const ROW_SEL = 'div._ac7v.x1ty0z65.xzboxd6, div._ac7v.x1ty9z65.xzboxd6';
+
+function getReelRows(): HTMLElement[] {
+  const rows = Array.from(document.querySelectorAll<HTMLElement>(ROW_SEL));
+  console.log('[InstaSort] reel rows found:', rows.length, rows);
+  return rows;
+}
+
+function detectTilesPerRow(row: HTMLElement): number {
+  const children = Array.from(row.children);
+  const count = children.filter(el => el.querySelector('a[href*="/reel/"]')).length;
+  console.log('[InstaSort] tiles in first row:', count, children);
+  return count;
+}
+
+function InstaSort_checkpoint_detectGrid() {
+  const rows = getReelRows();
+  console.log('[InstaSort] total rows:', rows.length);
+  const tilesPerRow = rows.length ? detectTilesPerRow(rows[0]) : 0;
+  console.log('[InstaSort] detected tilesPerRow:', tilesPerRow);
+  return { rows: rows.length, tilesPerRow };
+}
+
+// Expose globally for manual console use
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).InstaSort_checkpoint_detectGrid = InstaSort_checkpoint_detectGrid;
