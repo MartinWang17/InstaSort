@@ -1,0 +1,19 @@
+{
+  "name": "instasort",
+  "version": "1.0.0",
+  "description": "Chrome extension to sort Instagram posts by views, likes, comments, or date",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "tsc && vite build && cp manifest.json dist/",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.246",
+    "typescript": "^5.2.2",
+    "vite": "^4.4.11"
+  },
+  "keywords": ["chrome-extension", "instagram", "sort", "typescript"],
+  "author": "",
+  "license": "MIT"
+}

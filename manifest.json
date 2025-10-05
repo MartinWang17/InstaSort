@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "InstaSort",
+  "version": "1.0.0",
+  "description": "Sort Instagram posts by views, likes, comments, or date",
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.instagram.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "InstaSort"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.instagram.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["content.js"],
+      "matches": ["https://www.instagram.com/*"]
+    }
+  ]
+}
