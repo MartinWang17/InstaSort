@@ -5,7 +5,7 @@ function getAllReelsByHref() {
   }
 
 // Minimal helper: pair each reel's tile (anchor's parent) with its views text
-function logTileViewPairsOnce() {
+function tileViewPairsOnce() {
   const anchors = Array.from(getAllReelsByHref());
   const pairs = anchors.map(a => {
     const tile = ((a.parentElement?.parentElement) as HTMLElement) ?? (a.parentElement as HTMLElement) ?? a;
@@ -39,8 +39,8 @@ function parseViews(viewsText: string): number {
   }
 
   // checkpoint testing to ensure parseViews works
-  function logTileViewPairsWithNumbers() {
-    const pairs = logTileViewPairsOnce();
+  function tileViewPairsWithNumbers() {
+    const pairs = tileViewPairsOnce();
     const withNumbers = pairs.map(p => ({
       tile: p.tile,
       viewsText: p.viewsText,
@@ -52,11 +52,11 @@ function parseViews(viewsText: string): number {
   }
   
   // Expose for manual testing:
-  (window as any).InstaSort_logTileViewPairsWithNumbers = logTileViewPairsWithNumbers;
+  (window as any).InstaSort_tileViewPairsWithNumbers = tileViewPairsWithNumbers;
 
 // Step 3: reorder tiles visually by views (desc)
 function reorderReelsByViewsDesc() {
-  const pairs = logTileViewPairsWithNumbers();
+  const pairs = tileViewPairsWithNumbers();
   if (!pairs.length) {
     console.warn('[InstaSort] No tiles found to reorder.');
     return { moved: 0 };
@@ -89,7 +89,7 @@ function reorderReelsByViewsDesc() {
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type === 'LOG_REEL_ROWS') {
-        const count = logTileViewPairsOnce();
+        const count = redistributeTilesIntoRowsDesc();
         sendResponse({ ok: true, rows: count });
         // no async work here, so we don't need to return true
     }
@@ -122,3 +122,61 @@ function InstaSort_checkpoint_detectGrid() {
 // Expose globally for manual console use
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).InstaSort_checkpoint_detectGrid = InstaSort_checkpoint_detectGrid;
+
+// ---- Step 3.2: redistribute sorted tiles into rows of N (default 4) ----
+function redistributeTilesIntoRowsDesc(perRow = 4) {
+  // 1) Get sorted tiles (desc by views)
+  const pairs = tileViewPairsWithNumbers();
+  if (!pairs.length) {
+    console.warn('[InstaSort] No tiles to distribute.');
+    return { rowsUsed: 0, tilesPlaced: 0 };
+  }
+  const sorted = pairs.slice().sort((a, b) => {
+    const va = Number.isFinite(a.viewsNumber) ? a.viewsNumber : -1;
+    const vb = Number.isFinite(b.viewsNumber) ? b.viewsNumber : -1;
+    return vb - va; // desc
+  });
+  const tiles = sorted.map(p => p.tile);
+
+  // 2) Get existing rows and the grid container
+  const rows = getReelRows();
+  if (!rows.length) {
+    console.warn('[InstaSort] No row containers found.');
+    return { rowsUsed: 0, tilesPlaced: 0 };
+  }
+  const gridParent = rows[0].parentElement as HTMLElement | null;
+  if (!gridParent) {
+    console.warn('[InstaSort] Missing grid parent.');
+    return { rowsUsed: 0, tilesPlaced: 0 };
+  }
+
+  // 3) Ensure enough rows for groups of perRow (clone shallow rows if needed)
+  const neededRows = Math.ceil(tiles.length / perRow);
+  while (rows.length < neededRows) {
+    const clone = rows[0].cloneNode(false) as HTMLElement; // shallow clone; no children
+    gridParent.appendChild(clone);
+    rows.push(clone);
+  }
+
+  // 4) Clear current children in each row
+  rows.forEach(r => { while (r.firstChild) r.removeChild(r.firstChild); });
+
+  // 5) Distribute tiles row-by-row
+  let i = 0;
+  for (let r = 0; r < rows.length && i < tiles.length; r++) {
+    const frag = document.createDocumentFragment();
+    for (let c = 0; c < perRow && i < tiles.length; c++, i++) {
+      frag.appendChild(tiles[i]);
+    }
+    rows[r].appendChild(frag);
+  }
+
+  // 6) Checkpoint logs: how many per row after fill
+  const counts = rows.map(r => Array.from(r.children).length);
+  console.log(`[InstaSort] Distributed ${tiles.length} tiles across ${rows.length} rows @ ${perRow}/row`, counts);
+  return { rowsUsed: rows.length, tilesPlaced: tiles.length, perRow, counts };
+}
+
+// Expose checkpoint for manual run
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).InstaSort_redistributeTilesIntoRowsDesc = redistributeTilesIntoRowsDesc;
