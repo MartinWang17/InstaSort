@@ -54,6 +54,39 @@ function parseViews(viewsText: string): number {
   // Expose for manual testing:
   (window as any).InstaSort_logTileViewPairsWithNumbers = logTileViewPairsWithNumbers;
 
+// Step 3: reorder tiles visually by views (desc)
+function reorderReelsByViewsDesc() {
+  const pairs = logTileViewPairsWithNumbers();
+  if (!pairs.length) {
+    console.warn('[InstaSort] No tiles found to reorder.');
+    return { moved: 0 };
+  }
+
+  const parent = pairs[0].tile?.parentElement as HTMLElement | null;
+  if (!parent) {
+    console.warn('[InstaSort] Could not locate a common parent container.');
+    return { moved: 0 };
+  }
+
+  const sorted = pairs.slice().sort((a, b) => {
+    const va = Number.isFinite(a.viewsNumber) ? a.viewsNumber : -1;
+    const vb = Number.isFinite(b.viewsNumber) ? b.viewsNumber : -1;
+    return vb - va;
+  });
+
+  const frag = document.createDocumentFragment();
+  sorted.forEach(p => frag.appendChild(p.tile));
+  parent.appendChild(frag);
+
+  console.log('[InstaSort] Reordered tiles by views (desc). Moved:', sorted.length);
+  console.log('[InstaSort] Top 5 after sort:', sorted.slice(0, 5).map(x => x.viewsNumber));
+  return { moved: sorted.length };
+}
+
+// Expose for manual checkpoint
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).InstaSort_reorderReelsByViewsDesc = reorderReelsByViewsDesc;
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type === 'LOG_REEL_ROWS') {
         const count = logTileViewPairsOnce();
