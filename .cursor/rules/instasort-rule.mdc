@@ -1,0 +1,26 @@
+---
+alwaysApply: true
+---
+# Cursor Rules for InstaSort (strict incremental mode)
+
+## Working style (MUST follow)
+- Work in **one small step at a time**. Never implement more than **one** piece of logic per step.
+- **Never dump large code blocks.** Prefer tiny helper functions (≤ 20 lines) with clear names.
+- Before any code, write a **one-line goal** for this step.
+- After the code, add a **simple checkpoint** (e.g., `console.log(...)`) that proves this step works, and tell me exactly how to trigger it.
+- **Stop and ask for confirmation** (“Proceed to the next step?”) before moving on.
+
+## Change constraints
+- Keep diffs **minimal**; touch only the file(s) required for this step.
+- Don’t refactor or introduce abstractions unless I ask.
+- If something is ambiguous, ask **one concise question** and suggest **at most two options**.
+
+## Output format for each step
+1) **Goal** – 1 sentence.
+2) **Patch** – tiny helper function or a few edited lines (not a big dump).
+3) **Checkpoint** – what it logs/how to run it (e.g., which button to click or which message to send).
+4) **Next** – 1–2 short options for the following step.
+
+## Project specifics
+- Language: **TypeScript**, Chrome Extension context.
+- DOM targeting for reels: Prefer `a[href*="/reel/"]` selectors over row containers unless told otherwise.
